@@ -3,7 +3,7 @@ import(
 	"strings"
 )
 
-func convertURL(url string) string{
+func ConvertURL(url string) string{
     // Create replacer with pairs as arguments.
     r := strings.NewReplacer("/", "%2F",
             ".", "%2E",

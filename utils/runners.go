@@ -1,7 +1,6 @@
 package utils
 import(
     "context"
-    "io/ioutil"
     "math"
     "sync"
 	"log"
@@ -18,14 +17,10 @@ func Main_runner(url string, wg *sync.WaitGroup, ch chan<- *SSResponse) {
     defer wg.Done()
     // capture screenshot of an element
     var buf []byte
-
+	var err error
     // capture entire browser viewport, returning png with quality=90
-    if err := chromedp.Run(ctx, fullScreenshot(url, 90, &buf)); err != nil {
-        log.Fatal(err)
-    }
-	fileName := convertURL(url)+".png"
-    if err := ioutil.WriteFile(fileName, buf, 0644); err != nil {
-        log.Fatal(err)
+    if err = chromedp.Run(ctx, fullScreenshot(url, 90, &buf)); err != nil {
+        log.Println(err)
     }
 	ch <- &SSResponse{url,err,buf}
 }
