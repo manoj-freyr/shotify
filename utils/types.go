@@ -1,5 +1,5 @@
 package utils
-
+ 
 // screen shot response from workers
 type SSResponse struct{
 	URL string
