@@ -7,6 +7,7 @@ import (
 	"sync"
 	"utils"
 	"encoding/json"
+	"io/ioutil"
 )
 
 func main() {
@@ -14,15 +15,26 @@ func main() {
 	urls := []string{"https://www.netflix.com","https://www.google.com","https://www.github.com", "https://www.medium.com"}
 	var wg sync.WaitGroup
 	log.Println("main enter")
-	response_ch := make(chan utils.SSResponse)
+	response_ch := make(chan *utils.SSResponse)
 	for _, url := range urls {
 		wg.Add(1)
         go utils.Main_runner(url,&wg,response_ch)
     }
-	results := make([]utils.SSResponse, len(urls))
+	results := make([]utils.SvcResponse, len(urls))
 	for i := range results {
-        results[i] = <-response_ch
-    }
+		res := <-response_ch
+		if res.Err != nil{
+			results[i] = utils.SvcResponse{res.URL,res.Err.Error(),""}
+		}else{
+			link := utils.ConvertURL(res.URL)+".png"
+			err := ioutil.WriteFile(link, res.Data, 0644)
+			if err!= nil{
+				results[i] = utils.SvcResponse{res.URL,err.Error(),""}
+			}else{
+				results[i] = utils.SvcResponse{res.URL,"success",link}
+			}
+		}
+	}
 	wg.Wait()
 	jsonInfo, _ := json.Marshal(results)
 	log.Printf("jsonInfo: %s\n", jsonInfo)

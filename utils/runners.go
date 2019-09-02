@@ -11,7 +11,7 @@ import(
 )
 
 
-func Main_runner(url string, wg *sync.WaitGroup, ch chan<- SSResponse) {
+func Main_runner(url string, wg *sync.WaitGroup, ch chan<- *SSResponse) {
     // create context
     ctx, cancel := chromedp.NewContext(context.Background())
     defer cancel()
@@ -27,7 +27,7 @@ func Main_runner(url string, wg *sync.WaitGroup, ch chan<- SSResponse) {
     if err := ioutil.WriteFile(fileName, buf, 0644); err != nil {
         log.Fatal(err)
     }
-	ch <- SSResponse{URL:url, Status:"success",Link:fileName}
+	ch <- &SSResponse{url,err,buf}
 }
 
 // fullScreenshot takes a screenshot of the entire browser viewport.
