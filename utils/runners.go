@@ -20,6 +20,7 @@ func Main_runner(url string, wg *sync.WaitGroup, ch chan<- *SSResponse) {
 	var err error
     // capture entire browser viewport, returning png with quality=90
     if err = chromedp.Run(ctx, fullScreenshot(url, 90, &buf)); err != nil {
+		log.Println("manoj")
         log.Println(err)
     }
 	ch <- &SSResponse{url,err,buf}

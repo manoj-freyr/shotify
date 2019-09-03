@@ -22,16 +22,19 @@ func ArchiveHandler(w http.ResponseWriter, r *http.Request){
 func uploadHandler(w http.ResponseWriter, r *http.Request){
 	b, _ := ioutil.ReadAll(r.Body)
 	fileName,_ := r.URL.Query()["fileName"]
-	outer,inner := GetFolders(fileName[0])
-	os.MkdirAll(outer+inner, 0644)
-	_ = ioutil.WriteFile(outer+inner+fileName[0], b, 0644)
+	outer,inner := GetFolders(ConvertURL(fileName[0]))
+	os.MkdirAll(outer+"/"+inner, 0755)
+	err := ioutil.WriteFile(outer+"/"+inner+"/"+ConvertURL(fileName[0]), b, 0644)
+	if err!= nil{
+		fmt.Println(err)
+	}
 }
 
 //for GETs
 func queryHandler(w http.ResponseWriter, r *http.Request){
     fileName,_ := r.URL.Query()["fileName"]
-    outer,inner := GetFolders(fileName[0])
-	http.ServeFile(w,r,outer+inner+fileName[0])
+    outer,inner := GetFolders(ConvertURL(fileName[0]))
+	http.ServeFile(w,r,outer+"/"+inner+"/"+ConvertURL(fileName[0]))
 }
 
 func errorHandler(w http.ResponseWriter, r *http.Request, err string){
@@ -58,14 +61,17 @@ func readFromFile(r *http.Request) ([]string,error) {
 
 
 func writeHelper(url,filename string, data []byte)(string, error){
-	resp,err := http.Post("127.0.0.1:8008/req?fileName="+filename,"application/octet-stream" ,bytes.NewReader(data))
+	fmt.Println("damnitt "+filename)
+	resp,err := http.Post("http://127.0.0.1:8008/req?fileName="+filename,"application/octet-stream" ,bytes.NewReader(data))
 	if err!=nil{
+		log.Println("who am i")
 		return "",err
 	}
 	defer resp.Body.Close()
 	outer,inner := GetFolders(filename)
 	return outer+inner+filename, nil
 }
+
 func ListHandler(w http.ResponseWriter, r *http.Request){
     if r.Method == "GET" {
 		errorHandler(w,r,"400 Get not supported!")
@@ -94,7 +100,6 @@ func ListHandler(w http.ResponseWriter, r *http.Request){
 		}
 	}
     fmt.Println("urls are", urls)
-    //urls := []string{"https://www.netflix.com","https://www.google.com","https://www.github.com", "https://www.medium.com"}
     var wg sync.WaitGroup
     log.Println("main enter")
     response_ch := make(chan *SSResponse)
@@ -110,7 +115,6 @@ func ListHandler(w http.ResponseWriter, r *http.Request){
         }else{
             link := ConvertURL(res.URL)+".png"
             //err := ioutil.WriteFile(link, res.Data, 0644)
-			
 			_,err:= writeHelper("127.0.0.1:8008",link,res.Data)
             if err!= nil{
                 results[i] = SvcResponse{res.URL,err.Error(),""}
