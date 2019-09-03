@@ -58,16 +58,13 @@ func readFromFile(r *http.Request) ([]string,error) {
 
 
 func writeHelper(url,filename string, data []byte)(string, error){
-	cl := &http.Client{}
-	req,_ := http.NewRequest("POST", "127.0.0.1:8008/req?fileName="+filename, bytes.NewReader(data))
-	_, err := cl.Do(req)
+	resp,err := http.Post("127.0.0.1:8008/req?fileName="+filename,"application/octet-stream" ,bytes.NewReader(data))
 	if err!=nil{
 		return "",err
 	}
+	defer resp.Body.Close()
 	outer,inner := GetFolders(filename)
 	return outer+inner+filename, nil
-	
-	
 }
 func ListHandler(w http.ResponseWriter, r *http.Request){
     if r.Method == "GET" {
@@ -81,8 +78,8 @@ func ListHandler(w http.ResponseWriter, r *http.Request){
 		errorHandler(w,r,"400 - Either specify url list OR use file!")
 		return
 	}
-	if (listok && len(urls)<1){
-		errorHandler(w,r,"400 - No Urls specified!") 
+	if (listok && len(urlslist)<1){
+		errorHandler(w,r,"400 - No Urls specified!")
         return
     }
 	if listok{
@@ -113,6 +110,7 @@ func ListHandler(w http.ResponseWriter, r *http.Request){
         }else{
             link := ConvertURL(res.URL)+".png"
             //err := ioutil.WriteFile(link, res.Data, 0644)
+			
 			_,err:= writeHelper("127.0.0.1:8008",link,res.Data)
             if err!= nil{
                 results[i] = SvcResponse{res.URL,err.Error(),""}
