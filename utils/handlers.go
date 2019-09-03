@@ -12,7 +12,14 @@ import(
 	"strings"
 )
 
-func archiveHandler(w http.ResponseWriter, r *http.Request){
+func ArchiveHandler(w http.ResponseWriter, r *http.Request){
+	if r.Method == "GET"{
+		queryHandler(w,r)
+	}else{
+		uploadHandler(w,r)
+	}
+}
+func uploadHandler(w http.ResponseWriter, r *http.Request){
 	b, _ := ioutil.ReadAll(r.Body)
 	fileName,_ := r.URL.Query()["fileName"]
 	outer,inner := GetFolders(fileName[0])
@@ -49,6 +56,19 @@ func readFromFile(r *http.Request) ([]string,error) {
 	return urls,nil
 }
 
+
+func writeHelper(url,filename string, data []byte)(string, error){
+	cl := &http.Client{}
+	req,_ := http.NewRequest("POST", "127.0.0.1:8008/req?fileName="+filename, bytes.NewReader(data))
+	_, err := cl.Do(req)
+	if err!=nil{
+		return "",err
+	}
+	outer,inner := GetFolders(filename)
+	return outer+inner+filename, nil
+	
+	
+}
 func ListHandler(w http.ResponseWriter, r *http.Request){
     if r.Method == "GET" {
 		errorHandler(w,r,"400 Get not supported!")
@@ -92,9 +112,8 @@ func ListHandler(w http.ResponseWriter, r *http.Request){
             results[i] = SvcResponse{res.URL,res.Err.Error(),""}
         }else{
             link := ConvertURL(res.URL)+".png"
-            err := ioutil.WriteFile(link, res.Data, 0644)
-            //err := uploadToArchive(res.Data,link,"127.0.0.1:8008")
-            //err := http.NewRequest("POST", "127.0.0.1:8008", res.Data)
+            //err := ioutil.WriteFile(link, res.Data, 0644)
+			_,err:= writeHelper("127.0.0.1:8008",link,res.Data)
             if err!= nil{
                 results[i] = SvcResponse{res.URL,err.Error(),""}
             }else{
