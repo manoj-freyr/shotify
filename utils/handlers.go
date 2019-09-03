@@ -1,12 +1,35 @@
 package utils
 import(
-	"http"
+	"net/http"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"bytes"
+	"bufio"
+	"sync"
+	"log"
+	"encoding/json"
+	"strings"
 )
+
+func archiveHandler(w http.ResponseWriter, r *http.Request){
+	b, _ := ioutil.ReadAll(r.Body)
+	fileName,_ := r.URL.Query()["fileName"]
+	outer,inner := GetFolders(fileName[0])
+	os.MkdirAll(outer+inner, 0644)
+	_ = ioutil.WriteFile(outer+inner+fileName[0], b, 0644)
+}
+
+//for GETs
+func queryHandler(w http.ResponseWriter, r *http.Request){
+    fileName,_ := r.URL.Query()["fileName"]
+    outer,inner := GetFolders(fileName[0])
+	http.ServeFile(w,r,outer+inner+fileName[0])
+}
 
 func errorHandler(w http.ResponseWriter, r *http.Request, err string){
 	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte(err)
+	w.Write([]byte(err))
 	return
 }
 
@@ -16,12 +39,12 @@ func readFromFile(r *http.Request) ([]string,error) {
 		fmt.Println("error in reading")
         return nil,err
      }
-     r := bytes.NewReader(b)
+     rd := bytes.NewReader(b)
 	 urls := []string{}
-     scanner := bufio.NewScanner()
+     scanner := bufio.NewScanner(rd)
      scanner.Split(bufio.ScanLines)
      for scanner.Scan() {
-         urls.append(result, scanner.Text())
+         urls = append(urls, scanner.Text())
      }
 	return urls,nil
 }
@@ -31,8 +54,9 @@ func ListHandler(w http.ResponseWriter, r *http.Request){
 		errorHandler(w,r,"400 Get not supported!")
         return
     }
-    urls, listok := r.URL.Query()["urls"]
-	file, fileok := r.URL.Query()["urlfile"]
+	var urls []string
+    urlslist, listok := r.URL.Query()["urls"]
+	_, fileok := r.URL.Query()["urlfile"]
 	if (listok && fileok) || (!listok && !fileok){
 		errorHandler(w,r,"400 - Either specify url list OR use file!")
 		return
@@ -42,10 +66,11 @@ func ListHandler(w http.ResponseWriter, r *http.Request){
         return
     }
 	if listok{
-		urls = strings.Split(urls ",")
+		urls = strings.Split(urlslist[0] ,",")
 	}
+	var err error
 	if fileok{
-		urls,err := readFromFile(r)
+		urls,err = readFromFile(r)
 		if err!=nil{
 			errorHandler(w,r,"400 - Bad url file")
 			return

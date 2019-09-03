@@ -22,7 +22,7 @@ func hash(s string) uint32 {
 }
 
 func GetFolders(url string) (string,string) {
-        hashNum := hash("HelloWorld")
-        fmt.Println(strconv.Itoa(int(hashNum % 1000)), strconv.Itoa(int(hashNum % 100)))
+	hashNum := hash(url)
+	return strconv.Itoa(int(hashNum) % 100), strconv.Itoa(int(hashNum) % 1000)
 }
 
