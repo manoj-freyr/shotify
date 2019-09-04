@@ -61,7 +61,6 @@ func readFromFile(r *http.Request) ([]string,error) {
 
 
 func writeHelper(url,filename string, data []byte)(string, error){
-	fmt.Println("damnitt "+filename)
 	resp,err := http.Post("http://127.0.0.1:8008/req?fileName="+filename,"application/octet-stream" ,bytes.NewReader(data))
 	if err!=nil{
 		log.Println("who am i")
@@ -114,7 +113,6 @@ func ListHandler(w http.ResponseWriter, r *http.Request){
             results[i] = SvcResponse{res.URL,res.Err.Error(),""}
         }else{
             link := ConvertURL(res.URL)+".png"
-            //err := ioutil.WriteFile(link, res.Data, 0644)
 			_,err:= writeHelper("127.0.0.1:8008",link,res.Data)
             if err!= nil{
                 results[i] = SvcResponse{res.URL,err.Error(),""}

@@ -4,6 +4,7 @@ import(
     "math"
     "sync"
 	"log"
+	"errors"
     "github.com/chromedp/cdproto/emulation"
     "github.com/chromedp/cdproto/page"
     "github.com/chromedp/chromedp"
@@ -18,11 +19,16 @@ func Main_runner(url string, wg *sync.WaitGroup, ch chan<- *SSResponse) {
     // capture screenshot of an element
     var buf []byte
 	var err error
+	valid,isok :=HTTPify(url)
+	if isok == true{
     // capture entire browser viewport, returning png with quality=90
-    if err = chromedp.Run(ctx, fullScreenshot(url, 90, &buf)); err != nil {
-		log.Println("manoj")
-        log.Println(err)
-    }
+		if err = chromedp.Run(ctx, fullScreenshot(valid, 90, &buf)); err != nil {
+			log.Println(err)
+		}
+	}else{
+		log.Println("invalid URL "+url)
+		err = errors.New("Invalid URL")
+	}
 	ch <- &SSResponse{url,err,buf}
 }
 
