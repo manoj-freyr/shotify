@@ -70,19 +70,29 @@ Basically workflow is as below:
  Scalability for upto 1 million screenshots a day:
   I have used local file system on the archive server to save screenshot images. Database is not very well suited to store files and 
   since all we need is a POST and GET on the image files alone, we get better performance using filesystem.
+  
   But caveat was some file systems support a fixed number of subdirectories(like In ext3 a directory can have at most
   32,000 subdirectories). To handle this, I have used a directory tree structure like root/<outerfolder>/<inner_folder>filename where
   outer and inner are calculated using hash of the filename. Scales pretty well. But this again hits inherent limit of disk capacity.
-  To handle it, we must run archive server behind a proxy/ load balancer so with some consistent hashing so that we can distribute the load
-  across multiple machines . This combined with directory tree can handle any number of load with horizontal scaling.
+ 
+  To handle it, we must run archive server behind a proxy/ load balancer so with some consistent hashing so that we can distribute the   load
+  across multiple machines .
+  
+  This combined with directory tree can handle any number of load with horizontal scaling.
   
   
 Limitations on my implementation:
+
     1. The lookup cache used to avoid repeated fetches is crude and needs to be improved to prevent lock starvations
+    
     2. Hardcoded extensions(.png), ip addresses of archive server. Should be made configurable using a json file.\
+    
     3. Hacky and crude url parse logic using url.Parse(). since chromedp rejected urls without http/s, added that too in hardcoded way
+    
     4. To handle installations of chrome headless , should have made a docker compose file 
+    
     5. Vendoring support using go modules to be added.
+    
     6. Load testing is not done.
  
  
