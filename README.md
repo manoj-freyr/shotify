@@ -38,22 +38,33 @@ Basically workflow is as below:
               eg/- curl -H "Content-Type: text/plain" -X POST 'http://127.0.0.1:8002/?urlfile' --data-binary @testurls.txt
               
   2. As a response, in case of success we get below json:
+  
           [
+          
               {
-              "url":"https://www.google.com",
+              
+               "url":"https://www.google.com",
+              
               "status":"success",
+              
               "link":"https%3A%2F%2Fwww.google.com"
+              
               },
+              
               {
               "url":"http://www.github.com",
+              
               "status":"success",
+              
               "link":"http%3A%2F%2Fwww.github.com"
+              
               }
               ]
               
-   3. Using the link in the json, one can issue a GET request for file as,          
-            curl http://127.0.0.1:8008/?fileName=<valid_link>
-            eg/- curl http://127.0.0.1:8008/?fileName=http%3A%2F%2Fwww.github.com > somefile.png
+   3. Using the link in the json, one can issue a GET request for file as,    
+   
+            * curl http://127.0.0.1:8008/?fileName=<valid_link>
+               eg/- curl http://127.0.0.1:8008/?fileName=http%3A%2F%2Fwww.github.com > somefile.png
             
 
  Scalability for upto 1 million screenshots a day:
