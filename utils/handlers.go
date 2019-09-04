@@ -12,6 +12,11 @@ import(
 	"strings"
 )
 
+var lookUpMap = LinkMap{
+    Lookup: make(map[string]string),
+}
+
+
 func ArchiveHandler(w http.ResponseWriter, r *http.Request){
 	if r.Method == "GET"{
 		queryHandler(w,r)
@@ -22,25 +27,32 @@ func ArchiveHandler(w http.ResponseWriter, r *http.Request){
 func uploadHandler(w http.ResponseWriter, r *http.Request){
 	b, _ := ioutil.ReadAll(r.Body)
 	fileName,_ := r.URL.Query()["fileName"]
-	outer,inner := GetFolders(ConvertURL(fileName[0]))
+	link := ConvertURL(fileName[0])
+	outer,inner := GetFolders(link)
 	os.MkdirAll(outer+"/"+inner, 0755)
-	err := ioutil.WriteFile(outer+"/"+inner+"/"+ConvertURL(fileName[0]), b, 0644)
+	err := ioutil.WriteFile(outer+"/"+inner+"/"+link+".png", b, 0644)
 	if err!= nil{
 		fmt.Println(err)
 	}
+	log.Println("in uploadHandler"+fileName[0])
+	lookUpMap.Insert(fileName[0], link)
 }
 
 //for GETs
 func queryHandler(w http.ResponseWriter, r *http.Request){
-    fileName,_ := r.URL.Query()["fileName"]
-    outer,inner := GetFolders(ConvertURL(fileName[0]))
-	http.ServeFile(w,r,outer+"/"+inner+"/"+ConvertURL(fileName[0]))
+    fileName,err := r.URL.Query()["fileName"]
+	if err != true{
+		errorHandler(w,r,"Invalid URL, no fileName")
+		return
+	}
+	link := ConvertURL(fileName[0])
+    outer,inner := GetFolders(link)
+	http.ServeFile(w,r,outer+"/"+inner+"/"+link+".png")
 }
 
 func errorHandler(w http.ResponseWriter, r *http.Request, err string){
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte(err))
-	return
 }
 
 func readFromFile(r *http.Request) ([]string,error) {
@@ -98,21 +110,32 @@ func ListHandler(w http.ResponseWriter, r *http.Request){
 			return
 		}
 	}
+	var cachedresults []SvcResponse
     fmt.Println("urls are", urls)
     var wg sync.WaitGroup
     log.Println("main enter")
     response_ch := make(chan *SSResponse)
+
+	newCnt := 0
     for _, url := range urls {
-        wg.Add(1)
-        go Main_runner(url,&wg,response_ch)
+		log.Println("url is"+url)
+		imLink,ok := lookUpMap.IsPresent(url)
+		if !ok{
+			newCnt++
+			wg.Add(1)
+			go Main_runner(url,&wg,response_ch)
+		}else{
+			fmt.Println("Content already in")
+			cachedresults = append(cachedresults,SvcResponse{url,"success",imLink})
+		}
     }
-    results := make([]SvcResponse, len(urls))
+    results := make([]SvcResponse, newCnt)
     for i := range results {
         res := <-response_ch
         if res.Err != nil{
             results[i] = SvcResponse{res.URL,res.Err.Error(),""}
         }else{
-            link := ConvertURL(res.URL)+".png"
+            link := ConvertURL(res.URL)
 			_,err:= writeHelper("127.0.0.1:8008",link,res.Data)
             if err!= nil{
                 results[i] = SvcResponse{res.URL,err.Error(),""}
@@ -122,7 +145,8 @@ func ListHandler(w http.ResponseWriter, r *http.Request){
         }
     }
     wg.Wait()
-    jsonInfo, _ := json.Marshal(results)
+	finalResults := append(results,cachedresults...)
+	jsonInfo, _ := json.Marshal(finalResults)
     log.Printf("jsonInfo: %s\n", jsonInfo)
     w.Header().Set("Content-Type", "application/json")
     w.Write(jsonInfo)

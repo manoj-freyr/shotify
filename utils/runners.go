@@ -10,7 +10,6 @@ import(
     "github.com/chromedp/chromedp"
 )
 
-
 func Main_runner(url string, wg *sync.WaitGroup, ch chan<- *SSResponse) {
     // create context
     ctx, cancel := chromedp.NewContext(context.Background())
